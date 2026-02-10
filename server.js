@@ -49,7 +49,12 @@ function readUsers() {
     return { users: [] };
   }
   const raw = fs.readFileSync(usersPath, 'utf8');
-  return JSON.parse(raw || '{"users":[]}');
+  try {
+    return JSON.parse(raw || '{"users":[]}');
+  } catch (err) {
+    console.error('Invalid users.json. Resetting to empty list.');
+    return { users: [] };
+  }
 }
 
 function writeUsers(data) {
