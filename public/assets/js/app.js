@@ -23,18 +23,25 @@
     btn.addEventListener('click', async () => {
       const row = btn.closest('.input-row');
       const input = row ? row.querySelector('input') : null;
-      if (!input || !input.value.trim()) {
+      const panel = btn.closest('.input-panel');
+      const fileInput = panel ? panel.querySelector('.file-input') : null;
+      const chartSelect = panel ? panel.querySelector('.chart-select') : null;
+
+      const text = input ? input.value.trim() : '';
+      const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+      const chartType = chartSelect ? chartSelect.value : '';
+
+      if (!text && !file) {
         return;
       }
 
       const thread = document.querySelector('.chat-thread');
       if (!thread) return;
 
-      const text = input.value.trim();
       const userBubble = document.createElement('div');
       userBubble.className = 'chat-card user';
       userBubble.innerHTML = '<div class="chat-meta">You</div><p></p>';
-      userBubble.querySelector('p').textContent = text;
+      userBubble.querySelector('p').textContent = text || (file ? `Uploaded: ${file.name}` : '');
       thread.appendChild(userBubble);
       userBubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
 
@@ -44,7 +51,8 @@
       thread.appendChild(assistantBubble);
       assistantBubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
 
-      input.value = '';
+      if (input) input.value = '';
+      if (fileInput) fileInput.value = '';
       btn.classList.add('is-sent');
       setTimeout(() => btn.classList.remove('is-sent'), 600);
 
@@ -55,10 +63,14 @@
       }
 
       try {
+        const formData = new FormData();
+        if (text) formData.append('text', text);
+        if (chartType) formData.append('chartType', chartType);
+        if (file) formData.append('file', file);
+
         const res = await fetch(`/api/bot/${botId}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text })
+          body: formData
         });
 
         if (res.status === 401) {
@@ -73,6 +85,13 @@
         }
 
         assistantBubble.querySelector('p').textContent = data.text || 'No response text returned.';
+        if (data.image) {
+          const img = document.createElement('img');
+          img.src = data.image;
+          img.alt = 'Generated output';
+          img.className = 'chat-image';
+          assistantBubble.appendChild(img);
+        }
       } catch (err) {
         assistantBubble.querySelector('p').textContent = 'Request failed. Try again.';
       }

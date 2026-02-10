@@ -481,6 +481,15 @@ a {
   margin-bottom: 6px;
 }
 
+.chat-image {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 14px;
+  margin-top: 12px;
+  box-shadow: var(--shadow-soft);
+  display: block;
+}
+
 .input-panel {
   background: var(--card);
   border-radius: var(--radius-lg);
@@ -493,6 +502,11 @@ a {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.input-row.secondary {
+  margin-top: 12px;
+  flex-wrap: wrap;
 }
 
 .input-row.is-focus input {
@@ -508,6 +522,31 @@ a {
   font-family: 'Outfit', sans-serif;
   font-size: 14px;
   outline: none;
+}
+
+.file-input {
+  flex: 1;
+  border: 1px dashed #cfd6ea;
+  background: #f9faff;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.chart-select {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.input-hint {
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .send-btn {
