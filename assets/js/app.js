@@ -1,4 +1,41 @@
 ﻿(() => {
+  const statusBar = document.createElement('div');
+  statusBar.className = 'status-bar';
+  statusBar.innerHTML = '<span class="status-dot"></span><span class="status-text">Ready</span>';
+  document.body.appendChild(statusBar);
+
+  const setStatus = (state, text) => {
+    const dot = statusBar.querySelector('.status-dot');
+    const label = statusBar.querySelector('.status-text');
+    label.textContent = text;
+    dot.classList.remove('warn', 'error');
+    if (state === 'warn') dot.classList.add('warn');
+    if (state === 'error') dot.classList.add('error');
+    statusBar.classList.add('show');
+    clearTimeout(setStatus._t);
+    setStatus._t = setTimeout(() => statusBar.classList.remove('show'), 3000);
+  };
+
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const fetchWithRetry = async (url, options, tries = 3) => {
+    let lastErr;
+    for (let i = 0; i < tries; i += 1) {
+      try {
+        const res = await fetch(url, options);
+        if (res.status === 502 || res.status === 503 || res.status === 504) {
+          throw new Error('waking');
+        }
+        return res;
+      } catch (err) {
+        lastErr = err;
+        setStatus('warn', 'Waking up server...');
+        await sleep(800 * (i + 1));
+      }
+    }
+    throw lastErr;
+  };
+
   const inputs = document.querySelectorAll('.input-row input');
   inputs.forEach((input) => {
     input.addEventListener('focus', () => input.parentElement.classList.add('is-focus'));
@@ -68,12 +105,13 @@
         if (chartType) formData.append('chartType', chartType);
         if (file) formData.append('file', file);
 
-        const res = await fetch(`/api/bot/${botId}`, {
+        const res = await fetchWithRetry(`/api/bot/${botId}`, {
           method: 'POST',
           body: formData
         });
 
         if (res.status === 401) {
+          setStatus('error', 'Session expired. Please login again.');
           window.location.href = '/login.html';
           return;
         }
@@ -92,8 +130,22 @@
           img.className = 'chat-image';
           assistantBubble.appendChild(img);
         }
+        setStatus('success', 'Response received');
       } catch (err) {
-        assistantBubble.querySelector('p').textContent = 'Request failed. Try again.';
+        assistantBubble.querySelector('p').textContent = 'Server is waking up. Please try again in a moment.';
+        setStatus('error', 'Request failed. Try again.');
+      }
+    });
+  });
+
+  const inputsForSend = document.querySelectorAll('.input-row input[type="text"]');
+  inputsForSend.forEach((input) => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const panel = input.closest('.input-panel');
+        const sendBtn = panel ? panel.querySelector('.send-btn') : null;
+        if (sendBtn) sendBtn.click();
       }
     });
   });

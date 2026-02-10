@@ -1,5 +1,5 @@
 ﻿const express = require('express');
-const session = require('express-session');
+const cookieSession = require('cookie-session');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs');
@@ -41,17 +41,13 @@ app.use(express.urlencoded({ extended: true }));
 
 app.set('trust proxy', 1);
 
-app.use(session({
+app.use(cookieSession({
   name: 'suite.sid',
-  secret: process.env.SESSION_SECRET || 'change-this-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 24
-  }
+  keys: [process.env.SESSION_SECRET || 'change-this-secret'],
+  maxAge: 1000 * 60 * 60 * 24,
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: process.env.NODE_ENV === 'production'
 }));
 
 app.use('/assets', express.static(path.join(publicDir, 'assets')));
@@ -244,10 +240,9 @@ app.post('/api/login', (req, res) => {
 });
 
 app.post('/api/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.clearCookie('suite.sid');
-    res.json({ ok: true });
-  });
+  req.session = null;
+  res.clearCookie('suite.sid');
+  res.json({ ok: true });
 });
 
 app.get('/api/session', (req, res) => {
